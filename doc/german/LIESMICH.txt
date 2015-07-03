@@ -1,0 +1,11 @@
+Hier finden sich bereits fertige und vor allem komplett durchprobierte Anleitungen zur Installation eines Tileservers.
+
+Systemumgebung:
+Virtueller Ubuntu 14.04.2-Server
+IP-Adresse lokal: 192.168.0.68
+
+Vor den Anleitungen bereits installiert:
+
+* sudo apt-get install lamp-server^
+* sudo apt-get install redmine
+
