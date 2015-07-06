@@ -8,7 +8,7 @@ Mit Hilfe von Mapnik und dem Apache-Modul mod_tile werden die Datenbankdaten dan
 Die Darstellung von Markern geschieht dann clientseitig über JavaScript, das entweder statische Daten oder Daten aus einer Datenbank beinhaltet.
 Die Installation setzt ein frisches Ubuntu 14.04.2-Server-Betriebssystem vorraus.
 
-Inhaltzsverzeichnis:
+Inhaltsverzeichnis:
 
 * Installation
 * Tuning
