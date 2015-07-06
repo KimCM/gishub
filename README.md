@@ -9,13 +9,10 @@ Main features:
 * Interface for GPS-transmitting mobile radios (Tetra)
 * Interface for a special App for smartphones to get GPS data from the whole staff
 * Interface to web-editable tables so more than just one admin can import geodata like addresses
+* Interface to files generated with "Google Earth" (Points, Polygons)
 
 I still look for other developers to contribute and I put my work on it as far as I'm hrough to it.
 
 
-Dirk Blanckenhorn
-ELectrician THW Germany
-Male Nurse
-IT-Engineer
-Founder
+Dirk Blanckenhorn / ELectrician / THW Germany / Male Nurse / IT-Engineer / Founder
 
