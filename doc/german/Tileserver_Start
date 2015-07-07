@@ -10,11 +10,11 @@ Die Installation setzt ein frisches Ubuntu 14.04.2-Server-Betriebssystem vorraus
 
 Inhaltsverzeichnis:
 
-* Installation
-* Tuning
-* Daten in den Server laden
-* Start des Tileservers
-* Die erste Karte
-* Marker auf der Karte
-* Eigene Marker aus der Datenbank anzeigen
-* Verschiedene Layer auswählbar machen
+1. Installation
+2. Tuning
+3. Daten in den Server laden
+4. Start des Tileservers
+5. Die erste Karte
+6. Marker auf der Karte
+7. Eigene Marker aus der Datenbank anzeigen
+8. Verschiedene Layer auswählbar machen
