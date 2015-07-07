@@ -1,0 +1,181 @@
+Installation
+
+Zuerst wurden alle nötigen Softwarekomponenten (120MB) installiert, die Basis für das Projekt:
+
+# sudo apt-get install libboost-all-dev subversion git-core tar unzip wget bzip2 build-essential autoconf libtool libxml2-dev libgeos-dev libgeos++-dev libpq-dev libbz2-dev libproj-dev munin-node munin libprotobuf-c0-dev protobuf-c-compiler libfreetype6-dev libpng12-dev libtiff4-dev libicu-dev libgdal-dev libcairo-dev libcairomm-1.0-dev apache2 apache2-dev libagg-dev liblua5.2-dev ttf-unifont lua5.1 liblua5.1-dev libgeotiff-epsg node-carto
+
+Danach werden postgis und postgres installiert - postgres als verwendete Datenbank und postgis als Erweiterung für postgres, um spatiale und geographische Objekte in postgres aufzunehmen:
+
+# sudo apt-get install postgresql postgresql-contrib postgis postgresql-9.3-postgis-2.1
+
+Als nächstes werden die Datenbank 'gis' und der Datenbankbenutzer 'gisuser' angelegt:
+
+# sudo -u postgres -i
+# createuser gisuser # Mit 'yes' antworten für superuser, obwohl es strenggenommen nicht nötig ist
+# createdb -E UTF8 -O gisuser gis
+# exit
+
+Dieser User muss auch User im System sein, also wird er angelegt und mit einem willkürlichen Passwort (hier "gisuser")versehen:
+
+# sudo useradd -m gisuser
+# sudo passwd gisuser
+
+Nun wird die Datenbank für postgis vorbereitet:
+
+# sudo -u postgres psql
+postgres=# \c gis
+postgres=# CREATE EXTENSION postgis;
+postgres=# ALTER TABLE geometry_columns OWNER TO gisuser;
+postgres=# ALTER TABLE spatial_ref_sys OWNER TO gisuser;
+postgres=# \q
+
+Als nächstes wird osm2pgsql (OpenStreetmap to PostgreSQL) frisch heruntergeladen und installiert:
+
+# mkdir ~/src
+# cd ~/src
+# git clone git://github.com/openstreetmap/osm2pgsql.git
+# cd osm2pgsql
+# ./autogen.sh
+# ./configure
+# make
+# sudo make install
+
+Danach werden die Mapnick-Bibliotheken heruntergeladen und installiert, die für das Rendern der OSM-Daten zuständig sind:
+
+# cd ~/src
+# git clone git://github.com/mapnik/mapnik
+# cd mapnik
+# git branch 2.2 origin/2.2.x
+# git checkout 2.2
+# python scons/scons.py configure INPUT_PLUGINS=all OPTIMIZATION=3 SYSTEM_FONTS=/usr/share/fonts/truetype/
+# make
+# sudo make install
+# sudo ldconfig
+
+Eventuelle fehlende ABhängigkeiten bei Plugins können ignoriert werden.
+Mit Python muss nun überprüft werden, ob Mapnick erfolgreich eingebunden werden kann:
+
+# python
+>>> import mapnik
+
+Python muss mit einem neuen Chevron (=">>>") antworten ohne Fehlermeldung - dann ist alles in Ordnung. Mit
+
+>>> quit()
+
+kann Python wieder verlassen werden.
+Nun wird mod_tile heruntergeladen und installiert:
+
+# cd ~/src
+# git clone git://github.com/openstreetmap/mod_tile.git
+# cd mod_tile
+# ./autogen.sh
+# ./configure
+# make
+# sudo make install
+# sudo make install-mod_tile
+# sudo ldconfig
+
+Jetzt wird noch ein Stylesheet gebraucht, das dem System sagt, wie die Karte konkret aussehen soll. Dazu wird "OSM Bright":https://github.com/mapbox/osm-bright verwendet. Das ist allerdings nicht das gleiche, wie das "offizielle OSM-Stylesheet":https://github.com/gravitystorm/openstreetmap-carto, welches auch seine eigenen "Installationsanweisungen":https://github.com/gravitystorm/openstreetmap-carto/blob/master/INSTALL.md hat
+
+# mkdir -p -m777 /usr/local/share/maps/style
+# cd /usr/local/share/maps/style
+# wget https://github.com/mapbox/osm-bright/archive/master.zip
+# wget http://data.openstreetmapdata.com/simplified-land-polygons-complete-3857.zip
+# wget http://data.openstreetmapdata.com/land-polygons-split-3857.zip
+# wget http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/cultural/ne_10m_populated_places_simple.zip
+
+Danach wird das Stylesheet entpackt und in das OSM-bright-Master-Projekt verschoben:
+
+# unzip '*.zip'
+# mkdir -m777 ne_10m_populated_places_simple
+# mv ne_10m_populated_places_simple.dbf ne_10m_populated_places_simple.prj ne_10m_populated_places_simple.README.html ne_10m_populated_places_simple.s* ne_10m_populated_places_simple.VERSION.txt ne_10m_populated_places_simple
+# mkdir -m777 osm-bright-master/shp
+# mv land-polygons-split-3857 osm-bright-master/shp/
+# mv simplified-land-polygons-complete-3857 osm-bright-master/shp/
+# mv ne_10m_populated_places_simple osm-bright-master/shp/
+
+Für die größeren Shape-Dateien werden Indizes angelegt:
+
+# cd osm-bright-master/shp/land-polygons-split-3857
+# shapeindex land_polygons.shp
+# cd ../simplified-land-polygons-complete-3857/
+# shapeindex simplified_land_polygons.shp
+# cd ../
+
+Dem Stylesheet muss nun noch der Ort der Daten angegeben werden:
+
+# vi /usr/local/share/maps/style/osm-bright-master/osm-bright/osm-bright.osm2pgsql.mml
+
+Finde dort alle URLs auf die Shapefiles, die mit .zip enden (Zeile 7,20,405), und ersetze sie durch die entsprechenden nachfolgenden Zeilen:
+
+  "file": "/usr/local/share/maps/style/osm-bright-master/shp/simplified-land-polygons-complete-3857/simplified_land_polygons.shp", 
+  "type": "shape",
+
+
+  "file": "/usr/local/share/maps/style/osm-bright-master/shp/land-polygons-split-3857/land_polygons.shp", 
+  "type": "shape"
+
+
+  "file": "/usr/local/share/maps/style/osm-bright-master/shp/ne_10m_populated_places_simple/ne_10m_populated_places_simple.shp", 
+  "type": "shape"
+
+Nun noch in der gleichen Datei in der Sektion "ne_places" die Zeilen mit "srs" und "srs-name" durch diese eine Zeile ersetzen:
+
+"srs": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+
+Das Stylesheet ist nun fertig konfiguriert. Nun muss es noch in XML compiliert werden:
+
+# cd /usr/local/share/maps/style/osm-bright-master/
+# cp configure.py.sample configure.py
+# vi configure.py
+
+Ändere in der Datei configure.py nun den Eintrag für config["path"] von ~/Documents/Mapbox/project in /usr/local/share/maps/style und ändere den Datenbanknamen von osm nach gis.
+Starte nun den Präprozessor und Carto:
+
+# ./make.py
+# cd ../OSMBright/
+# carto project.mml > OSMBright.xml
+
+Das fertige Mapnick-Stylesheet befindet sich nun in /usr/local/share/maps/style/OSMBright/OSMBright.xml.
+Jetzt geht es an den Webserver - editiere die Konfigurationsdatei für das Plugin renderd:
+
+# sudo vi /usr/local/etc/renderd.conf
+
+Ändere die folgenden Einträge bzw. entferne die Kommentierung am Zeilenanfang, falls vorhanden:
+
+  socketname=/var/run/renderd/renderd.sock
+  plugins_dir=/usr/local/lib/mapnik/input
+  font_dir=/usr/share/fonts/truetype/ttf-dejavu
+  XML=/usr/local/share/maps/style/OSMBright/OSMBright.xml
+  HOST=localhost
+
+Bereite nun die Verzeichnisse für mod_tile vor:
+
+# sudo mkdir /var/run/renderd
+# sudo chown gisuser /var/run/renderd
+# sudo mkdir /var/lib/mod_tile
+# sudo chown gisuser /var/lib/mod_tile
+
+Erstelle nun die Datei /etc/apache2/conf-available/mod_tile.conf:
+
+# sudo vi /etc/apache2/conf-available/mod_tile.conf
+
+mit folgendem Inhalt:
+
+  LoadModule tile_module /usr/lib/apache2/modules/mod_tile.so
+
+Ändere nun die Apache-Konfiguration, um mod_tile einzubinden:
+
+# sudo vi /etc/apache2/sites-available/000-default.conf
+
+Füge folgende Zeilen unmittelbar nach der Admin-EMailadresse ein:
+
+  oadTileConfigFile /usr/local/etc/renderd.conf
+  ModTileRenderdSocketName /var/run/renderd/renderd.sock
+  ModTileRequestTimeout 0
+  ModTileMissingRequestTimeout 30
+
+Sag Apache, daß es ein neues Modul gibt und starte es:
+
+# sudo a2enconf mod_tile
+# sudo service apache2 reload
