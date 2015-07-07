@@ -1,0 +1,36 @@
+Tuning
+
+PostgreSQL-Tuning
+
+PostgreSQL muss erstmal auf die große Datenmenge eingestellt werden:
+
+# sudo vi /etc/postgresql/9.3/main/postgresql.conf
+
+Ändere hier folgende Einstellungen:
+
+shared_buffers = 128MB
+checkpoint_segments = 20
+maintenance_work_mem = 256MB
+autovacuum = off
+
+Kernel-Tuning
+
+Das erfordert auch eine Änderung der Kernel-Konfiguration (mehr geteilter Arbeitsspeicher), die bei jedem Reboot automatisch erfolgen muss:
+
+# sudo vi /etc/sysctl.conf
+
+
+Füge folgende Zeilen am Anfang nach den anderen Kerneldefinitionen ein, um das Shared Memory zu erhöhen, was für große Datenbanken gebraucht wird::
+
+kernel.shmmax=268435456
+
+Führe dann einen Neustart des Servers durch:
+
+# sudo reboot
+
+Prüfe dann die Kerneländerungen mit
+
+# sudo sysctl kernel.shmmax
+
+Die Ausgabe muss "268435456" sein.
+
