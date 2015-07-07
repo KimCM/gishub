@@ -1,0 +1,28 @@
+Daten in den Server laden
+
+Nun wird eine aktuelle Kopie des Kartenmaterials heruntergeladen, der verwendet werden soll (Hier am Beispiel das Saarland, andere *.pbf-Dateien gibts von geofabrik.de:
+
+# sudo mkdir -p -m777 /usr/local/share/maps/saarland
+# cd /usr/local/share/maps/saarland
+# wget http://download.geofabrik.de/europe/germany/saarland-latest.osm.pbf
+
+Die Datei für Deutschland hat aktuell 2,4GB, die für das Saarland 26.4MB.
+Danach werden die Daten in einem bei Quelldaten im GB-Bereich mehrstündigen Prozess in die Datenbank importiert:
+
+# sudo -u gisuser ~/src/osm2pgsql/osm2pgsql --slim --style ~/src/osm2pgsql/default.style -d gis -C 12000 --number-processes 3 /usr/local/share/maps/saarland/saarland-latest.osm.pbf
+
+Hierbei können die "NOTICE"-Meldungen am Anfang getrost ignoriert werden.
+Das kann man auch automatisieren - man muss nur ein Script schreiben, das per wget die neuste PBF-Datei herunterlädt und automatisch so importiert, daß die vorhandene Karte ersetzt wird:
+
+#! /bin/sh
+cd /usr/local/share/maps/saarland
+wget http://download.geofabrik.de/europe/germany/saarland-latest.osm.pbf
+/home/dirk/src/osm2pgsql/osm2pgsql --slim --style /home/dirk/src/osm2pgsql/default.style -d gis -C 12000 --number-processes 3 /usr/local/share/maps/saarland/saarland-latest.osm.pbf
+
+
+Mit dem Programm "osm2pgsql" können alle Openstreetmap-Quellformate importiert werden:
+    *.osm
+    *.pbf
+    *.gz
+    *.bz2
+    *.osm
