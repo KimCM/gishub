@@ -1,0 +1,159 @@
+Verschiedene Layer auswählbar machen
+
+Die Karte soll eine Möglichkeit bekommen Marker in Gruppen zusammenzufassen, um jede Gruppe einzeln darstellbar zu machen oder auszublenden.
+
+Quelle der Anleitung für den Einsatz mehrerer Marker-Gruppen: http://leafletjs.com/examples/layers-control.html
+Quelle der ANleitung für den Einsatz von benutzerdefinierten Markern: http://leafletjs.com/examples/custom-icons.html
+
+Dazu musste zunächst die Datenbank um eine Spalte "Layer" erweitert werden, in dem ein Textkürzel (alphanumerisch ohne Sonder- und Leerzeichen) die Ebenen definiert. 
+Das aus der Datenbank generierte Array $data[] sieht daher beispielhaft wie folgt aus:
+
+    Array
+    (
+        [0] => Array
+            (
+                [id] => 1
+                [name] => THW OV Heusweiler
+                [layer] => THW
+                [lat] => 49.3385
+                [lon] => 6.93308
+                [details] => Details über THW Heusweiler
+                [icon] => /gishub/leaflet/images/marker_thw_ov.png
+                [iconx] => 60
+                [icony] => 40
+                [timestamp] => 2015-07-03 01:03:03
+            )
+        [1] => Array
+            (
+                [id] => 2
+                [name] => THW OV Lebach
+                [layer] => THW
+                [lat] => 49.4023
+                [lon] => 6.88998
+                [details] => THW Ortsverband Lebach
+                [icon] => /gishub/leaflet/images/marker_thw_ov.png
+                [iconx] => 60
+                [icony] => 40
+                [timestamp] => 2015-07-03 01:03:11
+            )
+        [2] => Array
+            (
+                [id] => 3
+                [name] => Freiwillige Feuerwehr Heusweiler
+                [layer] => FW
+                [lat] => 49.3402
+                [lon] => 6.93316
+                [details] => Freiwillige Feuerwehr Heusweiler
+                [icon] => /gishub/leaflet/images/marker_fw_gh.png
+                [iconx] => 60
+                [icony] => 40
+                [timestamp] => 2015-07-03 01:38:11
+            )
+        [3] => Array
+            (
+                [id] => 4
+                [name] => Freiwillige Feuerwehr Niedersaubach
+                [layer] => FW
+                [lat] => 49.4228
+                [lon] => 6.9186
+                [details] => Freiwillige Feuerwehr Niedersaubach
+                [icon] => /gishub/leaflet/images/marker_fw_gh.png
+                [iconx] => 60
+                [icony] => 40
+                [timestamp] => 2015-07-03 01:38:11
+            )
+    )
+
+Danach ist die marker.php aufzubohren, damit noch viel mehr Javascript-Code dynamisch generiert wird:
+
+    <?php
+    
+    include("data.php"); // Hole das Array $data(), das in "data.php" aus der Datenbank erstellt wird
+    
+    // Vereinfachter Javascript-Code aus der leafletembed.js:
+    
+    ?>
+    <script type="text/javascript">
+    // Generelle Optionen für alle Icons:
+    var LeafIcon = L.Icon.extend({
+        options:{
+            iconAnchor:   [0, 0],   // Icon:  Versatz vom Koordinatenpunkt X,Y positiv:links/oben negativ: rechts/unten
+            popupAnchor:  [30, -5]  // Popup: Versatz vom Koordinatenpunkt X,Y negativ:links/oben positiv: rechts/unten
+        }
+    });
+    <?php
+    $mapsection="var map = L.map('map', {\ncenter: [49.333332, 6.916667],\nzoom: 12,\nlayers: [";
+    $layersection="";
+    $varsection="var ";
+    $markersection="";
+    $overlaysection="var overlays = {";
+    
+    $layergroups=array_keys(array_flip(array_column($data,"layer"))); // erstellt ein Array mit allen vorhandenen Layern
+    for($i=0;$i<count($layergroups);$i++)
+    {
+    $layersection.="var ".$layergroups[$i]." = new L.LayerGroup();\n";
+    $mapsection.=$layergroups[$i];
+    $overlaysection.="\"".$layergroups[$i]."\": ".$layergroups[$i];
+    if($i<count($layergroups)-1) { $mapsection.=","; $overlaysection.=","; }
+    }
+    $mapsection.="]\n});\n";
+    $overlaysection.="};\n";
+    
+    for($i=0;$i<count($data);$i++) {
+        // Wenn die Markerkoordinaten innerhalb des betrachteten Kartenausschnittes liegen, dann...
+        //if ($data[$i]["lon"] > $bbox[0] && $data[$i]["lon"] < $bbox[2] && $data[$i]["lat"] > $bbox[1] && $data[$i]["lat"] < $bbox[3]) {
+    
+            $varsection.="icon".$i." = new LeafIcon({iconSize: [".$data[$i]["iconx"].", ".$data[$i]["icony"]."],iconUrl: '".$data[$i]["icon"]."'})";
+            if ($i < count($data) - 1) { $varsection.=",\n"; } else { $varsection.="\n";}
+            $markersection.="L.marker([".$data[$i]["lat"].", ".$data[$i]["lon"]."], {icon: icon".$i."}).bindPopup(\"".$data[$i]["details"]."\").addTo(".$data[$i]["layer"].");\n";
+        //}
+    }
+    echo $layersection."\n".$varsection."\n".$markersection."\n".$mapsection."\n".$overlaysection."\n";
+    
+    ?>
+    L.tileLayer('/osm_tiles/{z}/{x}/{y}.png', { minZoom: 10, maxZoom: 18,attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
+    L.control.layers(overlays).addTo(map);
+    </script>
+
+Dieses Script generiert dann eine Javascript-Datei ähnlich dieser:
+
+    <script type="text/javascript">
+    // Generelle Optionen für alle Icons:
+    var LeafIcon = L.Icon.extend({
+        options:{
+            iconAnchor:   [0, 0],   // Icon:  Versatz vom Koordinatenpunkt X,Y positiv:links/oben negativ: rechts/unten
+            popupAnchor:  [30, -5]  // Popup: Versatz vom Koordinatenpunkt X,Y negativ:links/oben positiv: rechts/unten
+        }
+    });
+    // Definition von Marker-Gruppen:
+    var THW = new L.LayerGroup();
+    var FW = new L.LayerGroup();
+    
+    // Definition der benutzerdefinierten Icons:
+    var icon0 = new LeafIcon({iconSize: [60, 40],iconUrl: '/gishub/leaflet/images/marker_thw_ov.png'}),
+    icon1 = new LeafIcon({iconSize: [60, 40],iconUrl: '/gishub/leaflet/images/marker_thw_ov.png'}),
+    icon2 = new LeafIcon({iconSize: [60, 40],iconUrl: '/gishub/leaflet/images/marker_fw_gh.png'}),
+    icon3 = new LeafIcon({iconSize: [60, 40],iconUrl: '/gishub/leaflet/images/marker_fw_gh.png'})
+    
+    // Definition der Marker mit den eigenen Icons und Zuordnung zu den definierten Gruppen:
+    L.marker([49.3385, 6.93308], {icon: icon0}).bindPopup("Details &uuml;ber <b>THW Heusweiler</b>").addTo(THW);
+    L.marker([49.4023, 6.88998], {icon: icon1}).bindPopup("THW Ortsverband Lebach").addTo(THW);
+    L.marker([49.3402, 6.93316], {icon: icon2}).bindPopup("Freiwillige Feuerwehr Heusweiler").addTo(FW);
+    L.marker([49.4228, 6.9186], {icon: icon3}).bindPopup("Freiwillige Feuerwehr Niedersaubach").addTo(FW);
+    
+    // Definition der Karte und ihrer Ebenen:
+    var map = L.map('map', {
+    center: [49.333332, 6.916667],
+    zoom: 12,
+    layers: [THW,FW]
+    });
+    
+    // Definition der Inhalte des Auswahlfeldes für die Ebenen:
+    var overlays = {"THW": THW,"FW": FW};
+    
+    // Ergänzung der Kartendefinition um Tile-Server-Adresse und Zoomgrenzen:
+    L.tileLayer('/osm_tiles/{z}/{x}/{y}.png', { minZoom: 10, maxZoom: 18,attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
+    
+    // Definition des Auswahlfeldes:
+    L.control.layers(overlays).addTo(map);
+    </script>
