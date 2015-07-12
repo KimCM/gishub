@@ -1,0 +1,57 @@
+Die erste Karte
+
+Es gibt zwei mögliche Javascript-Bibliotheken, OpenLayers und Leflet. Leaflet ist neu und leichter, hat aber weniger Features. Aus Performancegründen wird für den Test aber nun Leaflet verwendet.
+
+Link zur Original-Anleitung: https://switch2osm.org/using-tiles/getting-started-with-leaflet/
+
+Herunterladen von Leaflet:
+
+# cd ~/src
+# git clone https://github.com/Leaflet/Leaflet.git
+
+Nim das Verzeichnis "dist" innerhalb von Leaflet, kopiere es nach /srv/repositories/gishub und benenne es in "leaflet" um:
+
+# cd /srv/repositories/gishub/
+# cp -R ~/src/Leaflet/dist .
+# cp ~/src/Leaflet/src/Leaflet.js dist
+# mv dist  leaflet
+
+Erstelle in /srv/repositories/gishub/leaflet die Datei leafletembed.js mit folgendem Inhalt:
+
+var map;
+var ajaxRequest;
+var plotlist;
+var plotlayers=[];
+
+function initmap() {
+        // set up the map
+        map = new L.Map('map');
+
+        // create the tile layer with correct attribution
+        var osmUrl='/osm_tiles/{z}/{x}/{y}.png';
+        var osmAttrib='Map data © <a href="http://openstreetmap.org">OpenStreetMap</a> contributors';
+        var osm = new L.TileLayer(osmUrl, {minZoom: 10, maxZoom: 18, attribution: osmAttrib});
+
+        // start the map in Heusweiler
+        map.setView(new L.LatLng(49.333332, 6.916667),12);
+        map.addLayer(osm);
+}
+
+Erstelle dann eine Datei /srv/repositories/gishub/kartentest.html mit folgendem Inhalt:
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<title>Kartentest</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="leaflet/leaflet.css" />
+<script type="text/javascript" src="http://leafletjs.com/dist/leaflet.js"></script>
+<script type="text/javascript" src="leaflet/leafletembed.js"></script>
+</head>
+<body onload="initmap();">
+<div id="map" style="width: 1024px; height: 768px"></div>
+</body>
+</html>
+
+Starte dann die Karte mit http://<IP-Adresse_des_Tileservers>/gishub/kartentest.html
