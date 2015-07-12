@@ -1,0 +1,114 @@
+Eigene Marker aus der Datenbank anzeigen
+
+Für diesen Test wird die Datei /gishub/kartentest2.html verwendet.
+
+Die ursprüngliche kartentest.html wurde leicht modifiziert:
+
+    <!DOCTYPE html>
+    <html lang="de">
+      <head>
+        <title>Kartentest</title>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="leaflet/leaflet.css" />
+        <script type="text/javascript" src="leaflet/web/leaflet.js"></script>
+      </head>
+      <body onload="initmap();">
+        <div id="map" style="width: 1024px; height: 768px"></div>
+        <?php include("leaflet/marker.php"); ?>
+      </body>
+    </html>
+
+Im Wesentlichen wird hier Javascript-Code der ursprünglichen "leafletembed.js" dynamisch durch PHP generiert und nach dem DIV der Karte eingebunden.
+
+Die eingebundene Datei leaflet/marker.php besteht aus teils statischem, teils dynamisch generiertem Javascript-Code:
+
+    <?php
+    include("data.php"); // Hole das Array $data(), das in "data.php" aus der Datenbank erstellt wird
+    // Vereinfachter Javascript-Code aus der leafletembed.js:
+    ?>
+    <script type="text/javascript">
+        var map = L.map('map').setView([49.333332, 6.916667], 12);
+    
+        L.tileLayer('/osm_tiles/{z}/{x}/{y}.png', { minZoom: 10, maxZoom: 18,attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
+    
+        var LeafIcon = L.Icon.extend({
+            options:{
+                iconSize:     [60, 40],
+                iconAnchor:   [0, 0],
+                popupAnchor:  [-3, -76]
+            }
+        });
+    <?php
+    $varsection="var ";
+    $markersection="";
+    for($i=0;$i<count($data);$i++) 
+    {
+      $varsection.="icon".$i." = new LeafIcon({iconUrl: '".$data[$i]["icon"]."'})";
+      if ($i < count($data) - 1) { $varsection.=",\n"; } else { $varsection.="\n";}
+      $markersection.="L.marker([".$data[$i]["lat"].", ".$data[$i]["lon"]."], {icon: icon".$i."}).bindPopup(\"".$data[$i]["details"]."\").addTo(map);\n";
+    }
+    echo "\n".$varsection.$markersection;
+    ?>
+    </script>
+
+Die Ausgabe des PHP-Scripts sieht dann beispielsweise so aus:
+
+    <script type="text/javascript">
+        var map = L.map('map').setView([49.333332, 6.916667], 12);
+    
+        L.tileLayer('/osm_tiles/{z}/{x}/{y}.png', { minZoom: 10, maxZoom: 18,attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
+    
+        var LeafIcon = L.Icon.extend({
+            options:{
+                iconSize:     [60, 40],
+                iconAnchor:   [0, 0],
+                popupAnchor:  [-3, -76]
+            }
+        });
+    
+    var icon0 = new LeafIcon({iconUrl: '/gishub/leaflet/images/marker_thw_ov.png'}),
+    icon1 = new LeafIcon({iconUrl: '/gishub/leaflet/images/marker_thw_ov.png'})
+    L.marker([49.3385, 6.93308], {icon: icon0}).bindPopup("Details &uuml;ber <b>THW Heusweiler</b>").addTo(map);
+    L.marker([49.4023, 6.88998], {icon: icon1}).bindPopup("THW Ortsverband Lebach").addTo(map);
+    </script>
+
+Die Daten kommen als Array aus der Datei data.php, die ihre Daten aus der MySQL-Datenbank bekommt:
+
+    <?php
+    $hostname = 'localhost';
+    $username = 'root';
+    $password = 'root';
+    $database = 'gishub';
+    
+    try {
+        $count=0;
+        $dbh = new PDO("mysql:host=$hostname;dbname=".$database, $username, $password);
+        $query = "SELECT * FROM marker";
+        $stmt = $dbh->query($query);
+        while($data[$count] = $stmt->fetch(PDO::FETCH_ASSOC)) $count++;
+        unset($data[$count]); // clear last empty element
+        $dbh = null;
+    }
+    catch(PDOException $e)
+    {
+        echo $e->getMessage();
+    }
+    ?>
+
+Die Tabellenstruktur ist simpel:
+
+    CREATE TABLE `marker` (
+      `id` int(11) NOT NULL AUTO_INCREMENT,
+      `name` varchar(255) NOT NULL,
+      `lat` float NOT NULL,
+      `lon` float NOT NULL,
+      `details` text NOT NULL,
+      `icon` varchar(255) NOT NULL,
+      `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`)
+    );
+
+Hierbei ist im Feld Icon der zum Webserver relative Pfad des Icons angegeben. 
+
+Nachteil aktuell: Es werden alle Marker ausgegeben, egal, ob der Marker auch im Kartenausschnitt ist oder nicht.
