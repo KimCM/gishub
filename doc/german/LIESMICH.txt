@@ -2,7 +2,6 @@ Hier finden sich bereits fertige und vor allem komplett durchprobierte Anleitung
 
 Systemumgebung:
 Virtueller Ubuntu 14.04.2-Server
-IP-Adresse lokal: 192.168.0.68
 
 Vor den Anleitungen bereits installiert:
 
