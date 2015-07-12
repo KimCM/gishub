@@ -1,0 +1,56 @@
+Start des Tileservers
+
+Starte renderd im aktuellen Terminal mit
+
+# sudo mkdir /var/run/renderd
+# sudo chown gisuser /var/run/renderd
+# sudo -u gisuser renderd -f -c /usr/local/etc/renderd.conf
+
+und führe in einem neuen Terminal folgendes aus:
+
+# sudo service apache2 reload
+
+Wenn es hier zu irgendwelchen fatalen Fehlern kommt ist zuvor etwas falsch gemacht worden.
+Gehe nun auf http://<IP_des_Tileservers>/osm_tiles/0/0/0.png und prüfe, ob es ein kleines Bild der Welt gibt.
+Die Map-Tiles werden im Bereich /var/lib/mod_tile gespeichert.
+Nun kann man im Erfolgsfall ersten Terminal renderd beenden und für den Autostart einrichten:
+
+# sudo cp  ~/src/mod_tile/debian/renderd.init /etc/init.d/renderd
+# sudo chmod u+x /etc/init.d/renderd
+
+Bearbeite nun die /etc/init.d/renderd:
+
+# sudo vi /etc/init.d/renderd
+
+und ersetze die folgenden Zeilen:
+
+DAEMON=/usr/local/bin/$NAME
+DAEMON_ARGS="-c /usr/local/etc/renderd.conf"
+RUNASUSER=gisuser
+
+Man sollte nun renderd starten können mit:
+
+# sudo /etc/init.d/renderd start
+
+und beenden können mit:
+
+# sudo /etc/init.d/renderd stop
+
+Wenn beim starten nun Fehler wie "iniparser: syntax error in /usr/local/etc/renderd.conf" auftauchen folgenden Fix durchführen: 
+Lösche alle mit Semikolon auskommentierten Einträge in der renderd.conf
+
+# sudo vi /usr/local/etc/renderd.conf
+
+Die Logging-Informationen werden nun in /var/log/syslog statt auf der Konsole ausgegeben.
+Nun muss der neue Dienst auch automatisch gestartet werden durch:
+
+# sudo ln -s /etc/init.d/renderd /etc/rc2.d/S20renderd
+
+Starte den Server neu mit
+
+# sudo reboot
+
+und teste erneut mit
+http://<IP_des_Tileservers>/osm_tiles/0/0/0.png
+
+Wenn das funktioniert ist der Tileserver fertig eingerichtet.
