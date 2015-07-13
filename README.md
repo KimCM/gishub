@@ -1,6 +1,6 @@
 Volunteer Organisations dealing with humanitarian catastrophes or major incidents (Like the Red Cross or the Fire brigade) in Germany have not much money - but they have to deal with situations where they need very quick informations about a specific area without having (sufficiant) Internet Access. Normally they have cars with radio communication and that's it.
 
-This Project tries to give them what they need (despite the hardware to run it, of course): A Software to generate and print maps with all the informations in a local database.
+This Project tries to give them what they need (despite the hardware to run it, of course): A Software to generate and print maps with all the informations in a local database. The System is designed to be installed in a car with or without mobile Internet access.
 
 Main features:
 * Display and print maps from a specific area
